@@ -154,12 +154,18 @@ async function getPackageFromDestsel(pkgCode2) {
 // STATUS DETERMINATION
 // =============================================================================
 
+// Online scheduling packages - customers schedule and pay at activatemytrip.com
+const ONLINE_SCHEDULING_PACKAGES = ['ECRA', 'ECRB', 'ECRD', 'EKCA'];
+
 function determineStatus(customer, packageInfo) {
     const {
         val_dep, conf_deposit, asgn_trv_dt, tm, conf_valid_code,
         cash_back_amt, Fnl_Doc_MO_Date, date_print_enc, decReady,
-        date_htl_book, date_agncy_book
+        date_htl_book, date_agncy_book, pkg_code2
     } = customer;
+
+    // Check if this is an online scheduling package
+    const isOnlineScheduling = pkg_code2 && ONLINE_SCHEDULING_PACKAGES.includes(pkg_code2.toUpperCase());
 
     // Calculate deposits
     const expectedRefDep = packageInfo ? packageInfo.ref_dep : 0;
@@ -235,7 +241,11 @@ function determineStatus(customer, packageInfo) {
     else if (depositsComplete && !asgn_trv_dt) {
         status = 'Ready to Schedule';
         statusLabel = 'Ready to Schedule';
-        agentMessage = 'Great news! Your deposit is all paid up and you are ready to select your travel dates.';
+        if (isOnlineScheduling) {
+            agentMessage = 'Great news! Your deposit is all paid up and you are ready to select your travel dates. You can login to your activatemytrip.com account to select your dates.';
+        } else {
+            agentMessage = 'Great news! Your deposit is all paid up and you are ready to select your travel dates.';
+        }
     }
     // 8. DATES SCHEDULED (outside TR window)
     else if (depositsComplete && asgn_trv_dt && (!tm || tm.trim() === '') && conf_valid_code === 'CONFIRM' && daysUntilTravel > 75) {
@@ -259,7 +269,11 @@ function determineStatus(customer, packageInfo) {
     else {
         status = 'Deposit Needed';
         statusLabel = 'Deposit Needed';
-        agentMessage = 'I see you have activated your vacation package. It looks like we are just waiting on your deposit.';
+        if (isOnlineScheduling) {
+            agentMessage = 'I see you have activated your vacation package. You can login to your activatemytrip.com account to select your travel dates and pay your deposit with a credit card.';
+        } else {
+            agentMessage = 'I see you have activated your vacation package. It looks like we are just waiting on your deposit.';
+        }
     }
 
     return {
@@ -277,7 +291,8 @@ function determineStatus(customer, packageInfo) {
             remaining: remaining,
             complete: depositsComplete
         },
-        daysUntilTravel
+        daysUntilTravel,
+        isOnlineScheduling
     };
 }
 
