@@ -449,6 +449,8 @@ app.get('/api/customer/status', async (req, res) => {
                 nights: packageInfo.nights,
                 vacation_type: packageInfo.vacation_type
             } : null,
+            is_online_scheduling: statusInfo.isOnlineScheduling,
+            is_phone_scheduling: statusInfo.isPhoneScheduling,
             is_business_hours: isBusinessHours()
         });
 
@@ -527,6 +529,8 @@ app.post('/api/customer/status-by-id', async (req, res) => {
                 nights: packageInfo.nights,
                 vacation_type: packageInfo.vacation_type
             } : null,
+            is_online_scheduling: statusInfo.isOnlineScheduling,
+            is_phone_scheduling: statusInfo.isPhoneScheduling,
             is_business_hours: isBusinessHours()
         });
 
@@ -658,6 +662,8 @@ app.post('/api/rims/customer-status', async (req, res) => {
                 destination: packageInfo.destination,
                 nights: packageInfo.nights
             } : null,
+            is_online_scheduling: statusInfo.isOnlineScheduling,
+            is_phone_scheduling: statusInfo.isPhoneScheduling,
             is_business_hours: isBusinessHours()
         });
 
