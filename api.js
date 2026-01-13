@@ -162,11 +162,33 @@ function determineStatus(customer, packageInfo) {
     } = customer;
 
     // Calculate deposits
+    const expectedRefDep = packageInfo ? packageInfo.ref_dep : 0;
+    const expectedConfDep = packageInfo ? packageInfo.deposit : 0;
     const expectedTotal = packageInfo ? packageInfo.total_expected : null;
     const paidValDep = val_dep || 0;
     const paidConfDep = conf_deposit || 0;
     const totalPaid = paidValDep + paidConfDep;
-    const depositsComplete = expectedTotal !== null ? totalPaid >= expectedTotal : (paidValDep > 0 || paidConfDep > 0);
+
+    // Determine if deposits are complete
+    // Special case: If destsel only requires ONE deposit (either ref_dep OR deposit, not both)
+    // and customer has paid that amount in EITHER field, consider it paid
+    let depositsComplete = false;
+    if (expectedTotal !== null) {
+        if (totalPaid >= expectedTotal) {
+            // Standard case: total paid covers total expected
+            depositsComplete = true;
+        } else if (expectedRefDep > 0 && expectedConfDep === 0) {
+            // Only ref_dep required - check if either paid field matches
+            depositsComplete = (paidValDep >= expectedRefDep || paidConfDep >= expectedRefDep);
+        } else if (expectedConfDep > 0 && expectedRefDep === 0) {
+            // Only deposit required - check if either paid field matches
+            depositsComplete = (paidValDep >= expectedConfDep || paidConfDep >= expectedConfDep);
+        }
+    } else {
+        // No package info - assume paid if any deposit exists
+        depositsComplete = (paidValDep > 0 || paidConfDep > 0);
+    }
+
     const remaining = expectedTotal !== null ? Math.max(0, expectedTotal - totalPaid) : null;
 
     const daysUntilTravel = asgn_trv_dt ? daysUntilDate(asgn_trv_dt) : null;
