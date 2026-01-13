@@ -1,0 +1,15 @@
+{
+  "name": "best-agent-api",
+  "version": "1.0.0",
+  "description": "Casablanca Express Best CS Agent API - Caller ID Status Lookup",
+  "main": "api.js",
+  "scripts": {
+    "start": "node api.js",
+    "dev": "node api.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  }
+}
