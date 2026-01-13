@@ -106,7 +106,15 @@ function daysUntilDate(dateString) {
 }
 
 function cleanPhone(phone) {
-    return phone.replace(/\D/g, '').replace(/^1/, '');
+    if (!phone) return '';
+    // Remove all non-digits
+    let cleaned = phone.replace(/\D/g, '');
+    // Remove leading 1 (country code) if 11 digits
+    if (cleaned.length === 11 && cleaned.startsWith('1')) {
+        cleaned = cleaned.substring(1);
+    }
+    console.log(`[cleanPhone] Input: "${phone}" -> Output: "${cleaned}"`);
+    return cleaned;
 }
 
 // =============================================================================
@@ -336,6 +344,7 @@ app.get('/health', (req, res) => {
  */
 app.get('/api/customer/status', async (req, res) => {
     const { phone } = req.query;
+    console.log(`[Status] Raw request - phone param: "${phone}", full query:`, req.query);
 
     if (!phone) {
         return res.json({
@@ -346,7 +355,7 @@ app.get('/api/customer/status', async (req, res) => {
     }
 
     const phoneClean = cleanPhone(phone);
-    console.log(`[Status] Looking up phone: ${phoneClean}`);
+    console.log(`[Status] Looking up phone: ${phoneClean} (raw: ${phone})`);
 
     try {
         // Look up customer by phone
