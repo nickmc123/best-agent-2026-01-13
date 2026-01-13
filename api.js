@@ -542,6 +542,98 @@ app.post('/api/rims/phone-lookup', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/rims/customer-status
+ * Get customer status by vac_id and pkg_code2
+ */
+app.post('/api/rims/customer-status', async (req, res) => {
+    const { vac_id, pkg_code2, phone_number } = req.body;
+
+    if (!vac_id && !phone_number) {
+        return res.json({ found: false, error: 'vac_id or phone_number required' });
+    }
+
+    console.log(`[Customer Status] Looking up vac_id: ${vac_id}, pkg_code2: ${pkg_code2}`);
+
+    try {
+        let whereClause;
+        if (vac_id) {
+            whereClause = `vac_id=${vac_id}`;
+        } else {
+            const phoneClean = cleanPhone(phone_number);
+            whereClause = `phn1='${phoneClean}' OR phn2='${phoneClean}'`;
+        }
+
+        const results = await queryCaspioTable(CASPIO_CONFIG.tables.rims_data, whereClause);
+
+        if (!results || results.length === 0) {
+            return res.json({ found: false, message: 'Customer not found' });
+        }
+
+        const customer = results[0];
+        const fullName = `${customer.p1F || ''} ${customer.p1L || ''}`.trim() || 'Valued Customer';
+
+        const packageInfo = await getPackageFromDestsel(customer.pkg_code2 || pkg_code2);
+        const statusInfo = determineStatus(customer, packageInfo);
+
+        console.log(`[Customer Status] Found: ${fullName}, Status: ${statusInfo.status}`);
+
+        return res.json({
+            found: true,
+            status: statusInfo.status,
+            status_label: statusInfo.statusLabel,
+            agent_message: statusInfo.agentMessage,
+            customer: {
+                full_name: fullName,
+                first_name: customer.p1F || '',
+                last_name: customer.p1L || '',
+                email: customer.email || '',
+                phone: customer.phn1 ? '+1' + customer.phn1 : '',
+                vac_id: customer.vac_id,
+                pkg_code2: customer.pkg_code2,
+                destination: customer.dest,
+                travel_date: customer.asgn_trv_dt || null,
+                days_until_travel: statusInfo.daysUntilTravel,
+                travel_rep_name: customer.tm || null
+            },
+            deposits: statusInfo.deposits,
+            details: {
+                deposits: statusInfo.deposits
+            },
+            package: packageInfo ? {
+                description: packageInfo.vaca_desc,
+                destination: packageInfo.destination,
+                nights: packageInfo.nights
+            } : null,
+            is_business_hours: isBusinessHours()
+        });
+
+    } catch (error) {
+        console.error(`[Customer Status] Error: ${error.message}`);
+        return res.json({ found: false, error: error.message });
+    }
+});
+
+/**
+ * POST /api/memos/create
+ * Create a memo in the customer's account (stub - logs for now)
+ */
+app.post('/api/memos/create', async (req, res) => {
+    const { vac_id, memo_type, details } = req.body;
+
+    console.log(`[Memo] Creating memo for vac_id: ${vac_id}, type: ${memo_type}, details: ${details}`);
+
+    // For now, just acknowledge - full implementation would write to Caspio
+    return res.json({
+        success: true,
+        message: 'Memo logged',
+        vac_id,
+        memo_type,
+        details,
+        timestamp: new Date().toISOString()
+    });
+});
+
 // =============================================================================
 // ERROR HANDLING
 // =============================================================================
